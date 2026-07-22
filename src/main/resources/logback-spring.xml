@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback 配置：
+  - local/dev profile：使用人类可读的文本格式，便于本地调试
+  - prod profile：输出结构化 JSON 日志，便于 ELK/Loki 等日志系统聚合分析
+  - 两者都包含 traceId 和 userId 上下文（来自 MDC）
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 人类可读格式，包含 MDC 上下文（traceId, userId） -->
+    <property name="CONSOLE_PATTERN"
+              value="[%X{traceId:-},%X{userId:-}] %d{ISO8601} %-5level %logger{36} - %msg%n"/>
+
+    <!-- local/dev 环境：控制台文本输出 -->
+    <springProfile name="local,dev,default">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${CONSOLE_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- prod 环境：结构化 JSON 输出，便于 ELK/Loki 聚合 -->
+    <springProfile name="prod">
+        <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <includeMdcKeyName>userId</includeMdcKeyName>
+                <customFields>{"app":"trip-designer","env":"prod"}</customFields>
+                <fieldNames>
+                    <timestamp>@timestamp</timestamp>
+                    <message>message</message>
+                    <logger>logger</logger>
+                    <level>level</level>
+                </fieldNames>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+    </springProfile>
+</configuration>

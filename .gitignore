@@ -1,0 +1,77 @@
+
+# ====================
+# Java / Maven Build
+# ====================
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# ====================
+# IDE / Editor
+# ====================
+.idea/
+*.iml
+.ipr
+.iws
+.vscode/
+.settings/
+.project
+.classpath
+.claude/
+.trae/
+
+# ====================
+# Secrets / Local Config
+# ====================
+.env
+application-local.yml
+application-local.properties
+*.key
+*.pem
+*.jks
+
+# ====================
+# Logs
+# ====================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ====================
+# OS / System
+# ====================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ====================
+# Frontend
+# ====================
+frontend/node_modules/
+frontend/dist/
+frontend/.output/
+frontend/auto-imports.d.ts
+frontend/components.d.ts
+frontend/tsconfig.tsbuildinfo
+
+# ====================
+# Frontend Build Artifacts
+# (Generated during build, should NOT be committed)
+# Vite builds to ../src/main/resources/static
+# ====================
+src/main/resources/static/assets/
+src/main/resources/static/index.html
+
+# ====================
+# Misc
+# ====================
+*.orig
+*.rej
+*.bak
+*.tmp
+
+inter/
