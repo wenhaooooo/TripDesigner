@@ -117,3 +117,25 @@ workflow:
   skip-on-failure: transport,dining,sightseeing,accommodation,budget,weather
   # 是否启用并行执行（Transport、Dining、Sightseeing、Accommodation、Budget 并行）
   parallel-execution-enabled: true
+
+# 知识库配置
+knowledge:
+  embedding:
+    provider: spring-ai
+    dimensions: 1536
+    batch-size: 100
+  rag:
+    top-k: 5
+    similarity-threshold: 0.5
+    mmr-lambda: 0.5
+    hybrid-alpha: 0.7
+    cache-ttl-minutes: 60
+  crawler:
+    enabled: true
+    rate-limit-ms: 1000
+    retry-count: 3
+    retry-delay-ms: 5000
+  scheduler:
+    enabled: true
+    cron: "0 0 2 * * ?"
+    incremental: true
