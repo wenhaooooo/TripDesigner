@@ -75,3 +75,5 @@ src/main/resources/static/index.html
 *.tmp
 
 inter/
+
+.github/

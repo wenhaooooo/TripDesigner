@@ -149,6 +149,37 @@
 |------|------|------|------|
 | POST | `/multimodal/upload` | 是 | 上传图片识别 |
 
+## 全球旅行知识库
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `/knowledge/crawl` | 是 | 触发数据采集 |
+| POST | `/knowledge/embed` | 是 | 手动嵌入内容 |
+| POST | `/knowledge/reindex` | 是 | 重建索引 |
+| GET | `/knowledge/search` | 是 | 知识检索（支持向量搜索、混合搜索、MMR） |
+| GET | `/knowledge/poi/{id}` | 是 | 获取 POI 详情 |
+| GET | `/knowledge/city/{id}` | 是 | 获取城市详情 |
+| GET | `/knowledge/country/{id}` | 是 | 获取国家详情 |
+| GET | `/knowledge/cities` | 是 | 城市列表（支持按国家筛选） |
+| GET | `/knowledge/pois` | 是 | POI 列表（支持按城市、分类筛选） |
+| GET | `/knowledge/stats` | 是 | 知识库统计信息 |
+| GET | `/knowledge/relations/{entityType}/{entityId}` | 是 | 获取知识图谱关系 |
+
+### 搜索参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| query | string | 是 | 搜索查询词 |
+| entityType | string | 否 | 实体类型：COUNTRY/CITY/POI/RESTAURANT/HOTEL/TRAVEL_GUIDE/ROUTE |
+| cityId | long | 否 | 城市 ID 筛选 |
+| countryId | long | 否 | 国家 ID 筛选 |
+| category | string | 否 | 分类筛选 |
+| language | string | 否 | 语言筛选，默认 en |
+| topK | int | 否 | 返回数量，默认 5 |
+| similarityThreshold | double | 否 | 相似度阈值，默认 0.5 |
+| useMmr | boolean | 否 | 是否使用 MMR，默认 false |
+| useHybridSearch | boolean | 否 | 是否使用混合搜索，默认 false |
+
 ## 响应格式
 
 所有 API 返回统一格式：

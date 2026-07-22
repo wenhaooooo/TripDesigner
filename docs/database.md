@@ -280,6 +280,248 @@
 | status | VARCHAR(20) | UPLOADED/RECOGNIZING/COMPLETED/FAILED |
 | version | INT | 乐观锁 |
 
+## 全球旅行知识库
+
+### kb_countries — 国家表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| name | VARCHAR(255) | 名称 |
+| iso_code2 | VARCHAR(2) | ISO 2位代码 |
+| iso_code3 | VARCHAR(3) | ISO 3位代码 |
+| continent | VARCHAR(100) | 大洲 |
+| capital | VARCHAR(100) | 首都 |
+| currency_code | VARCHAR(3) | 货币代码 |
+| languages | JSONB | 语言列表 |
+| latitude | DECIMAL(9,6) | 纬度 |
+| longitude | DECIMAL(9,6) | 经度 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_cities — 城市表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| country_id | BIGINT | 国家 ID |
+| name | VARCHAR(255) | 名称 |
+| name_local | VARCHAR(255) | 本地名称 |
+| timezone | VARCHAR(50) | 时区 |
+| population | INT | 人口 |
+| latitude | DECIMAL(9,6) | 纬度 |
+| longitude | DECIMAL(9,6) | 经度 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_pois — 兴趣点表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| city_id | BIGINT | 城市 ID |
+| name | VARCHAR(255) | 名称 |
+| name_local | VARCHAR(255) | 本地名称 |
+| category | VARCHAR(50) | 分类 |
+| subcategory | VARCHAR(50) | 子分类 |
+| description | TEXT | 描述 |
+| latitude | DECIMAL(9,6) | 纬度 |
+| longitude | DECIMAL(9,6) | 经度 |
+| address | VARCHAR(500) | 地址 |
+| opening_hours | JSONB | 营业时间 |
+| price_info | JSONB | 价格信息 |
+| contact_info | JSONB | 联系方式 |
+| rating | DECIMAL(3,2) | 评分 |
+| review_count | INT | 评论数 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_travel_guides — 旅行指南表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| city_id | BIGINT | 城市 ID |
+| country_id | BIGINT | 国家 ID |
+| title | VARCHAR(255) | 标题 |
+| language | VARCHAR(10) | 语言 |
+| content | TEXT | 内容 |
+| summary | TEXT | 摘要 |
+| sections | JSONB | 章节列表 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_restaurants — 餐厅表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| city_id | BIGINT | 城市 ID |
+| name | VARCHAR(255) | 名称 |
+| name_local | VARCHAR(255) | 本地名称 |
+| cuisine_type | VARCHAR(100) | 菜系 |
+| price_range | VARCHAR(10) | 价格范围 |
+| address | VARCHAR(500) | 地址 |
+| latitude | DECIMAL(9,6) | 纬度 |
+| longitude | DECIMAL(9,6) | 经度 |
+| opening_hours | JSONB | 营业时间 |
+| contact_info | JSONB | 联系方式 |
+| rating | DECIMAL(3,2) | 评分 |
+| review_count | INT | 评论数 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_hotels — 酒店表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| city_id | BIGINT | 城市 ID |
+| name | VARCHAR(255) | 名称 |
+| name_local | VARCHAR(255) | 本地名称 |
+| category | VARCHAR(50) | 分类 |
+| star_rating | INT | 星级 |
+| address | VARCHAR(500) | 地址 |
+| latitude | DECIMAL(9,6) | 纬度 |
+| longitude | DECIMAL(9,6) | 经度 |
+| amenities | JSONB | 设施列表 |
+| room_info | JSONB | 房间信息 |
+| contact_info | JSONB | 联系方式 |
+| rating | DECIMAL(3,2) | 评分 |
+| review_count | INT | 评论数 |
+| price_from | DECIMAL(10,2) | 最低价格 |
+| currency_code | VARCHAR(3) | 货币代码 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_routes — 路线表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| from_city_id | BIGINT | 出发城市 ID |
+| to_city_id | BIGINT | 到达城市 ID |
+| route_type | VARCHAR(50) | 路线类型 |
+| distance_km | DECIMAL(10,2) | 距离(公里) |
+| estimated_duration | JSONB | 预计时长 |
+| transportation_methods | JSONB | 交通方式 |
+| description | TEXT | 描述 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| last_synced_at | TIMESTAMPTZ | 最后同步时间 |
+| version | INT | 乐观锁 |
+
+### kb_knowledge_chunks — 知识块表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| entity_type | VARCHAR(50) | 实体类型 |
+| entity_id | BIGINT | 实体 ID |
+| chunk_type | VARCHAR(50) | 块类型 |
+| chunk_index | INT | 块索引 |
+| title | VARCHAR(255) | 标题 |
+| content | TEXT | 内容 |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| embedding | vector(1536) | 向量嵌入 |
+| metadata | JSONB | 元数据 |
+| language | VARCHAR(10) | 语言 |
+| token_count | INT | 令牌数 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| version | INT | 乐观锁 |
+
+### kb_knowledge_sources — 知识源表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| source_type | VARCHAR(50) | 源类型 |
+| source_url | VARCHAR(500) | 源 URL |
+| source_id | VARCHAR(255) | 源 ID |
+| entity_type | VARCHAR(50) | 实体类型 |
+| entity_id | BIGINT | 实体 ID |
+| raw_content | TEXT | 原始内容 |
+| content_hash | VARCHAR(64) | 内容哈希 |
+| fetched_at | TIMESTAMPTZ | 获取时间 |
+| etag | VARCHAR(255) | ETag |
+| last_modified | VARCHAR(100) | 最后修改时间 |
+| status | VARCHAR(20) | 状态 |
+| error_message | TEXT | 错误信息 |
+| retry_count | INT | 重试次数 |
+| version | INT | 乐观锁 |
+
+### kb_knowledge_relations — 知识关系表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| from_entity_type | VARCHAR(50) | 源实体类型 |
+| from_entity_id | BIGINT | 源实体 ID |
+| to_entity_type | VARCHAR(50) | 目标实体类型 |
+| to_entity_id | BIGINT | 目标实体 ID |
+| relation_type | VARCHAR(50) | 关系类型 |
+| weight | DECIMAL(3,2) | 权重 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| version | INT | 乐观锁 |
+
+### kb_knowledge_tags — 知识标签表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| entity_type | VARCHAR(50) | 实体类型 |
+| entity_id | BIGINT | 实体 ID |
+| tag | VARCHAR(100) | 标签 |
+| tag_type | VARCHAR(50) | 标签类型 |
+| language | VARCHAR(10) | 语言 |
+| version | INT | 乐观锁 |
+
+### kb_images — 图片表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键 |
+| entity_type | VARCHAR(50) | 实体类型 |
+| entity_id | BIGINT | 实体 ID |
+| url | VARCHAR(500) | URL |
+| url_thumb | VARCHAR(500) | 缩略图 URL |
+| caption | VARCHAR(255) | 标题 |
+| alt_text | VARCHAR(255) | 替代文本 |
+| width | INT | 宽度 |
+| height | INT | 高度 |
+| metadata | JSONB | 元数据 |
+| source | VARCHAR(50) | 数据源 |
+| source_id | VARCHAR(255) | 源 ID |
+| version | INT | 乐观锁 |
+
 ## ER 图
 
 ```
@@ -294,6 +536,24 @@ users ─── 1:N ─── team_applications
 users ─── 1:N ─── price_monitors
 users ─── 1:N ─── multimodal_uploads
 workflow_sessions ─── 1:N ─── workflow_steps
+
+## 知识库 ER 图
+
+kb_countries ─── 1:N ─── kb_cities ─── 1:N ─── kb_pois
+kb_countries ─── 1:N ─── kb_travel_guides
+kb_cities ─── 1:N ─── kb_travel_guides
+kb_cities ─── 1:N ─── kb_restaurants
+kb_cities ─── 1:N ─── kb_hotels
+kb_cities ─── 1:N ─── kb_routes (from_city_id, to_city_id)
+kb_pois ─── 1:N ─── kb_knowledge_chunks
+kb_travel_guides ─── 1:N ─── kb_knowledge_chunks
+kb_restaurants ─── 1:N ─── kb_knowledge_chunks
+kb_hotels ─── 1:N ─── kb_knowledge_chunks
+kb_routes ─── 1:N ─── kb_knowledge_chunks
+kb_knowledge_sources ─── 1:N ─── kb_knowledge_chunks
+kb_knowledge_tags ─── N:N ─── (all entities via entity_type/entity_id)
+kb_knowledge_relations ─── 1:N ─── (all entities via from/to entity_type/id)
+kb_images ─── N:N ─── (all entities via entity_type/entity_id)
 ```
 
 ## 索引策略
@@ -311,3 +571,25 @@ workflow_sessions ─── 1:N ─── workflow_steps
 | community_comments | post_id | 评论列表 |
 | travel_teams | user_id, status | 队伍列表 |
 | price_monitors | user_id, status | 监测列表 |
+
+## 知识库索引策略
+
+| 表 | 索引 | 说明 |
+|------|------|------|
+| kb_countries | iso_code2 (UNIQUE) | 快速查询 |
+| kb_countries | name | 名称搜索 |
+| kb_cities | country_id, name | 城市列表 |
+| kb_cities | name | 名称搜索 |
+| kb_pois | city_id, category | POI 列表 |
+| kb_pois | city_id | 城市 POI |
+| kb_pois | rating | 评分排序 |
+| kb_restaurants | city_id, cuisine_type | 餐厅搜索 |
+| kb_restaurants | rating | 评分排序 |
+| kb_hotels | city_id, category | 酒店搜索 |
+| kb_hotels | star_rating | 星级排序 |
+| kb_knowledge_chunks | entity_type, entity_id | 实体块查询 |
+| kb_knowledge_chunks | embedding (HNSW) | 向量检索 |
+| kb_knowledge_chunks | content (GIN) | 全文检索 |
+| kb_knowledge_sources | source_type, source_id | 源追踪 |
+| kb_knowledge_relations | from_entity_type, from_entity_id | 关系查询 |
+| kb_knowledge_relations | to_entity_type, to_entity_id | 反向关系 |

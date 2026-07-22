@@ -35,6 +35,7 @@ Trip Designer 是一款 AI 驱动的旅行规划工具，核心能力包括：
 | 💰 **智能价格监测**    | 监测航班/酒店/火车价格变化，定时触发提醒                                                     |
 | 💬 **AI 旅行顾问**   | 基于 RAG 的旅行顾问对话，支持流式输出                                                     |
 | 🎨 **多模态行程生成**   | 图片上传识别目的地，AI 自动生成相关行程                                                     |
+| 🌍 **全球旅行知识库**   | RAG 语义检索 + 知识图谱，支持 OSM/Wikivoyage/Wikipedia/OpenTripMap 多数据源自动采集与更新             |
 
 ***
 
@@ -118,6 +119,18 @@ com.tripdesigner/
 ├── team/                            # 旅行组队模块
 ├── price/                           # 价格监测模块
 ├── multimodal/                      # 多模态模块
+├── knowledge/                       # 全球旅行知识库模块
+│   ├── api/                         # REST API
+│   ├── application/                 # 应用服务
+│   ├── domain/                      # 领域实体与仓储接口
+│   ├── infrastructure/              # 持久化实现
+│   ├── embedding/                   # 嵌入服务（可插拔）
+│   ├── rag/                         # RAG 检索层
+│   ├── crawler/                     # 数据采集器
+│   ├── parser/                      # 数据解析器
+│   ├── chunker/                     # 语义切分器
+│   ├── pipeline/                    # 知识处理管道
+│   └── scheduler/                   # 定时同步
 └── common/                          # 公共基础设施
 ```
 
@@ -137,6 +150,7 @@ com.tripdesigner/
 | **team**         | 旅行组队，队伍创建、申请审核、目的地匹配                        |
 | **price**        | 价格监测，航班/酒店/火车价格追踪和提醒                        |
 | **multimodal**   | 多模态行程生成，图片上传识别目的地                           |
+| **knowledge**    | 全球旅行知识库，RAG 语义检索 + 知识图谱，自动数据采集与更新              |
 
 ***
 

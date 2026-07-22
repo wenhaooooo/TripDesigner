@@ -185,3 +185,102 @@ ReflectionAgent 输出中的 MEMORY 标签会自动落库：
 | ADVICE | TripMemory | 建议 |
 
 格式：`MEMORY: <TYPE> - <content>`
+
+## 全球旅行知识库集成
+
+### 知识库架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     知识采集层                                │
+│  OpenStreetMap  Wikivoyage  Wikipedia  OpenTripMap           │
+├─────────────────────────────────────────────────────────────┤
+│                     知识处理管道                              │
+│  Crawler → Parser → Cleaner → EntityResolver → Chunker       │
+│                      ↓                                       │
+│               EmbeddingService                               │
+│                      ↓                                       │
+│              VectorStorage (pgvector)                        │
+├─────────────────────────────────────────────────────────────┤
+│                     RAG 检索层                               │
+│  VectorSearch  HybridSearch  MMR  MetadataFilter             │
+├─────────────────────────────────────────────────────────────┤
+│                     Agent 集成层                             │
+│  Planner  POI  Food  Hotel  Budget  Transport               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Agent 知识库接口
+
+[KnowledgeAgentService](file:///Users/wenhao/code/Java/TripDesigner/src/main/java/com/tripdesigner/knowledge/agent/KnowledgeAgentService.java) 为每个 Agent 提供专用接口：
+
+| Agent | 接口方法 | 说明 |
+|-------|----------|------|
+| **Planner** | `buildDestinationContext()` | 获取目的地上下文（用于生成行程大纲） |
+| **POI/Sightseeing** | `recommendPois()` | 按城市和分类推荐景点 |
+| **Dining/Food** | `recommendRestaurants()` | 按城市和菜系推荐餐厅 |
+| **Accommodation/Hotel** | `recommendHotels()` | 按城市和等级推荐酒店 |
+| **Transport** | `getRoutes()` | 获取城市间路线和交通方式 |
+| **Weather** | `getTravelGuide()` | 获取目的地旅行指南 |
+| **Shopping** | `searchForAgent()` | 通用知识搜索 |
+
+### RAG 检索策略
+
+知识库支持三种检索策略：
+
+| 策略 | 说明 | 使用场景 |
+|------|------|----------|
+| **Vector Search** | 纯语义相似度检索 | 通用查询、模糊匹配 |
+| **Hybrid Search** | 向量 + 关键词全文检索融合 | 需要精确匹配的查询 |
+| **MMR** | 最大边际相关性检索 | 需要结果多样性的场景 |
+
+### 知识管道流程
+
+```
+Crawler  →  Parser  →  Cleaner  →  EntityResolver
+    ↓          ↓          ↓              ↓
+获取原始数据  解析结构化  清理文本内容  解析实体引用
+    ↓
+Chunker  →  Embedding  →  VectorStorage
+    ↓          ↓              ↓
+语义切分(600-800token)  生成向量  存储到pgvector
+    ↓
+KnowledgeGraph  ←  Relations
+    ↓
+建立实体关系（CONTAINS, NEAR, BEST_ROUTE）
+```
+
+### 知识库配置
+
+```yaml
+knowledge:
+  embedding:
+    provider: spring-ai           # spring-ai, dashscope, ollama
+    dimensions: 1536              # 向量维度
+  rag:
+    top-k: 5                      # 返回数量
+    similarity-threshold: 0.5      # 相似度阈值
+    mmr-lambda: 0.5               # MMR 多样性参数
+    hybrid-alpha: 0.7             # 混合搜索权重
+    cache-ttl-minutes: 60         # 缓存时长
+  crawler:
+    enabled: true                 # 是否启用采集
+    rate-limit-ms: 1000           # 请求间隔
+    retry-count: 3                # 重试次数
+  scheduler:
+    enabled: true                 # 是否启用定时同步
+    cron: "0 0 2 * * ?"           # 每日凌晨2点同步
+    incremental: true             # 增量更新
+```
+
+### 数据源支持
+
+| 数据源 | 类型 | 增量支持 | API Key | 说明 |
+|--------|------|----------|---------|------|
+| OpenStreetMap | 开放 | 是 | 否 | 全球地图数据、POI |
+| Wikivoyage | 开放 | 是 | 否 | 旅行指南内容 |
+| Wikipedia | 开放 | 是 | 否 | 目的地百科知识 |
+| OpenTripMap | API | 否 | 是 | POI 详情、评分 |
+| Google Places | API | 待实现 | 是 | 商业 POI 数据 |
+| TripAdvisor | API | 待实现 | 是 | 评论、评分 |
+| Lonely Planet | API | 待实现 | 是 | 专业旅行指南 |
