@@ -1,5 +1,6 @@
 package com.tripdesigner.multimodal.application;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tripdesigner.ai.trip.agent.AgentContext;
 import com.tripdesigner.ai.trip.agent.WorkflowEngine;
@@ -14,6 +15,15 @@ import com.tripdesigner.multimodal.domain.MultimodalUploadRepository;
 import com.tripdesigner.multimodal.domain.UploadStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.MediaType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -46,6 +56,7 @@ public class MultimodalAppService {
     private final MultimodalUploadRepository repository;
     private final MultimodalProperties properties;
     private final ObjectMapper objectMapper;
+    private final ChatClient chatClient;
 
     /** 上传图片并启动 AI 识别流程 */
     public MultimodalUploadVo uploadAndRecognize(Long userId, MultipartFile file) {
@@ -159,20 +170,126 @@ public class MultimodalAppService {
 
     /**
      * 图片识别：调用 Spring AI 多模态能力，或使用 fallback。
-     * 当前实现使用 fallback（基于文件名的简单识别），保留 ChatClient 集成点。
      */
     private Map<String, Object> recognize(MultimodalUpload upload) {
         if (!properties.isRecognitionEnabled()) {
             return fallbackRecognize(upload);
         }
         try {
-            // TODO: 集成 ChatClient 多模态调用
-            // ChatClient.create().prompt().user(u -> u.text("...").media(MimeTypeUtils.IMAGE_JPEG, resource))
-            // 当前降级到 fallback，避免依赖外部 API Key
-            return fallbackRecognize(upload);
+            return aiRecognize(upload);
         } catch (Exception e) {
-            log.warn("[Multimodal] Recognition failed, falling back: {}", e.getMessage());
+            log.warn("[Multimodal] AI recognition failed, falling back: {}", e.getMessage());
             return fallbackRecognize(upload);
+        }
+    }
+
+    /**
+     * 使用 AI 多模态模型进行视觉识别。
+     */
+    private Map<String, Object> aiRecognize(MultimodalUpload upload) {
+        log.info("[Multimodal] Starting AI recognition for: {}", upload.getOriginalFilename());
+        
+        String systemPrompt = """
+                你是一个旅行目的地识别专家。请分析这张图片，识别其中的地点或地标。
+                
+                请输出以下信息（JSON格式）：
+                {
+                    "destination": "识别到的目的地城市或国家名称，中文输出",
+                    "description": "图片内容描述",
+                    "tags": ["标签1", "标签2", "标签3"],
+                    "landmarks": ["地标1", "地标2", "地标3"],
+                    "suggestedDays": 建议的旅行天数（3-7天）
+                }
+                
+                注意：
+                - destination 必须是有效的旅行目的地城市名（中文）
+                - 如果无法识别具体地点，返回最可能的城市
+                - 如果完全无法识别，返回 "未知目的地"
+                """;
+
+        String userPrompt = "请分析这张图片，识别旅行目的地。";
+
+        FileSystemResource imageResource = new FileSystemResource(upload.getStoragePath());
+        
+        try {
+            String response = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(u -> u.text(userPrompt).media(MimeTypeUtils.IMAGE_JPEG, imageResource))
+                    .call()
+                    .content();
+
+            log.info("[Multimodal] AI recognition response: {}", response);
+
+            Map<String, Object> result = parseAiResponse(response);
+            
+            if (result == null || result.isEmpty()) {
+                throw new RuntimeException("AI response parsing failed");
+            }
+
+            String destination = (String) result.getOrDefault("destination", "未知目的地");
+            if ("未知目的地".equals(destination) || destination.isBlank()) {
+                return fallbackRecognize(upload);
+            }
+
+            result.put("source", "ai");
+            result.put("suggestedTripTitle", destination + " " + 
+                    result.getOrDefault("suggestedDays", 3) + "日游");
+            
+            return result;
+        } catch (Exception e) {
+            log.warn("[Multimodal] AI recognition error: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 解析 AI 返回的 JSON 响应。
+     */
+    private Map<String, Object> parseAiResponse(String response) {
+        try {
+            String jsonStr = response.trim();
+            if (jsonStr.contains("```")) {
+                int start = jsonStr.indexOf("```") + 3;
+                int end = jsonStr.lastIndexOf("```");
+                if (end > start) {
+                    jsonStr = jsonStr.substring(start, end).trim();
+                }
+            }
+            // 剥离 ```json 中的 "json" 语言标识
+            if (jsonStr.startsWith("json")) {
+                jsonStr = jsonStr.substring(4).trim();
+            }
+            
+            JsonNode node = objectMapper.readTree(jsonStr);
+            Map<String, Object> result = new HashMap<>();
+            
+            result.put("destination", node.path("destination").asText("未知目的地"));
+            result.put("description", node.path("description").asText(""));
+            
+            List<String> tags = new ArrayList<>();
+            JsonNode tagsNode = node.path("tags");
+            if (tagsNode.isArray()) {
+                for (JsonNode tag : tagsNode) {
+                    tags.add(tag.asText());
+                }
+            }
+            result.put("tags", tags.isEmpty() ? List.of("风景", "城市") : tags);
+            
+            List<String> landmarks = new ArrayList<>();
+            JsonNode landmarksNode = node.path("landmarks");
+            if (landmarksNode.isArray()) {
+                for (JsonNode landmark : landmarksNode) {
+                    landmarks.add(landmark.asText());
+                }
+            }
+            result.put("landmarks", landmarks.isEmpty() ? List.of("景点 A", "景点 B") : landmarks);
+            
+            result.put("suggestedDays", node.path("suggestedDays").asInt(3));
+            
+            return result;
+        } catch (Exception e) {
+            log.warn("[Multimodal] Failed to parse AI response: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -182,34 +299,97 @@ public class MultimodalAppService {
      */
     private Map<String, Object> fallbackRecognize(MultimodalUpload upload) {
         String filename = upload.getOriginalFilename() == null ? "" : upload.getOriginalFilename().toLowerCase();
-        // 去扩展名
         if (filename.contains(".")) {
             filename = filename.substring(0, filename.lastIndexOf('.'));
         }
 
         String destination = "未知目的地";
-        String[] knownDestinations = {
-                "tokyo", "japan", "kyoto", "osaka", "paris", "london", "newyork", "new york",
-                "beijing", "shanghai", "hangzhou", "chengdu", "xian", "xiamen", "guilin",
-                "东京", "京都", "大阪", "巴黎", "伦敦", "纽约", "北京", "上海", "杭州", "成都", "西安", "厦门", "桂林"
-        };
+        
+        Map<String, String> landmarkToDestination = new HashMap<>();
+        landmarkToDestination.put("大本钟", "伦敦");
+        landmarkToDestination.put("bigben", "伦敦");
+        landmarkToDestination.put("big ben", "伦敦");
+        landmarkToDestination.put("埃菲尔", "巴黎");
+        landmarkToDestination.put("eiffel", "巴黎");
+        landmarkToDestination.put("自由女神", "纽约");
+        landmarkToDestination.put("statue of liberty", "纽约");
+        landmarkToDestination.put("泰姬陵", "新德里");
+        landmarkToDestination.put("taj mahal", "新德里");
+        landmarkToDestination.put("富士山", "东京");
+        landmarkToDestination.put("fuji", "东京");
+        landmarkToDestination.put("长城", "北京");
+        landmarkToDestination.put("great wall", "北京");
+        landmarkToDestination.put("兵马俑", "西安");
+        landmarkToDestination.put("terracotta", "西安");
+        landmarkToDestination.put("西湖", "杭州");
+        landmarkToDestination.put("west lake", "杭州");
+        landmarkToDestination.put("黄鹤楼", "武汉");
+        landmarkToDestination.put("东方明珠", "上海");
+        landmarkToDestination.put("东方明珠塔", "上海");
+        landmarkToDestination.put("bund", "上海");
+        landmarkToDestination.put("外滩", "上海");
+        landmarkToDestination.put("故宫", "北京");
+        landmarkToDestination.put("forbidden city", "北京");
+        landmarkToDestination.put("天坛", "北京");
+        landmarkToDestination.put("temple of heaven", "北京");
 
-        for (String d : knownDestinations) {
-            if (filename.contains(d.toLowerCase())) {
-                destination = d;
+        for (Map.Entry<String, String> entry : landmarkToDestination.entrySet()) {
+            if (filename.contains(entry.getKey().toLowerCase())) {
+                destination = entry.getValue();
                 break;
             }
         }
 
-        // 如果文件名无目的地关键词，使用随机选择
+        if (destination.equals("未知目的地")) {
+            String[] knownDestinations = {
+                    "tokyo", "japan", "kyoto", "osaka", "paris", "london", "newyork", "new york",
+                    "beijing", "shanghai", "hangzhou", "chengdu", "xian", "xiamen", "guilin",
+                    "东京", "京都", "大阪", "巴黎", "伦敦", "纽约", "北京", "上海", "杭州", "成都", "西安", "厦门", "桂林"
+            };
+            for (String d : knownDestinations) {
+                if (filename.contains(d.toLowerCase())) {
+                    destination = d;
+                    break;
+                }
+            }
+        }
+
         if (destination.equals("未知目的地")) {
             String[] defaults = {"东京", "杭州", "成都", "厦门"};
             destination = defaults[Math.abs(filename.hashCode()) % defaults.length];
         }
 
-        List<String> tags = List.of("风景", "城市", "美食", "文化");
-        List<String> landmarks = List.of("景点 A", "景点 B", "景点 C");
-        Integer days = 3 + (Math.abs(filename.hashCode()) % 4); // 3-6 天
+        Map<String, String> destinationLandmarks = new HashMap<>();
+        destinationLandmarks.put("伦敦", "大本钟、伦敦塔、大英博物馆");
+        destinationLandmarks.put("巴黎", "埃菲尔铁塔、卢浮宫、凯旋门");
+        destinationLandmarks.put("纽约", "自由女神像、时代广场、帝国大厦");
+        destinationLandmarks.put("东京", "富士山、东京塔、浅草寺");
+        destinationLandmarks.put("北京", "故宫、长城、颐和园");
+        destinationLandmarks.put("上海", "外滩、东方明珠塔、豫园");
+        destinationLandmarks.put("杭州", "西湖、灵隐寺、雷峰塔");
+        destinationLandmarks.put("西安", "兵马俑、大雁塔、城墙");
+        destinationLandmarks.put("新德里", "泰姬陵、红堡、莲花寺");
+        destinationLandmarks.put("武汉", "黄鹤楼、东湖、长江大桥");
+
+        String landmarksStr = destinationLandmarks.getOrDefault(destination, "景点 A、景点 B、景点 C");
+        List<String> landmarks = List.of(landmarksStr.split("、"));
+        
+        Map<String, String> destinationTags = new HashMap<>();
+        destinationTags.put("伦敦", "文化、历史、博物馆");
+        destinationTags.put("巴黎", "浪漫、艺术、美食");
+        destinationTags.put("纽约", "现代、购物、夜景");
+        destinationTags.put("东京", "传统、现代、美食");
+        destinationTags.put("北京", "历史、文化、古迹");
+        destinationTags.put("上海", "现代、购物、美食");
+        destinationTags.put("杭州", "风景、休闲、文化");
+        destinationTags.put("西安", "历史、古迹、文化");
+        destinationTags.put("新德里", "历史、宗教、文化");
+        destinationTags.put("武汉", "历史、风景、美食");
+
+        String tagsStr = destinationTags.getOrDefault(destination, "风景、城市、美食、文化");
+        List<String> tags = List.of(tagsStr.split("、"));
+
+        Integer days = 3 + (Math.abs(filename.hashCode()) % 4);
         String description = String.format("基于图片「%s」识别到目的地「%s」，建议规划 %d 天行程",
                 upload.getOriginalFilename(), destination, days);
 

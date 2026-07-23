@@ -8,12 +8,11 @@
 --   - Source tracking & sync state for incremental crawls
 --   - Knowledge graph relations & tags
 --   - Image assets attached to any entity
--- Requires: pgvector (enabled in V1), PostGIS
+-- Requires: pgvector (enabled in V1)
 -- ============================================================
 
 -- Extensions (idempotent)
 CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- ------------------------------------------------------------
 -- kb_countries : Country reference data
@@ -27,7 +26,6 @@ CREATE TABLE kb_countries (
     capital         VARCHAR(128),
     currency_code   VARCHAR(3),
     languages       JSONB,
-    coordinates     GEOMETRY(Point, 4326),
     metadata        JSONB,
     source          VARCHAR(32),
     source_id       VARCHAR(128),
@@ -58,7 +56,6 @@ CREATE TABLE kb_cities (
     population      INTEGER,
     latitude        DECIMAL(9,6),
     longitude       DECIMAL(9,6),
-    geom            GEOMETRY(Point, 4326),
     metadata        JSONB,
     source          VARCHAR(32),
     source_id       VARCHAR(128),
@@ -74,7 +71,6 @@ CREATE INDEX idx_kb_cities_timezone     ON kb_cities(timezone);
 CREATE INDEX idx_kb_cities_source       ON kb_cities(source, source_id);
 CREATE INDEX idx_kb_cities_content_hash ON kb_cities(content_hash);
 CREATE INDEX idx_kb_cities_metadata_gin ON kb_cities USING GIN (metadata);
-CREATE INDEX idx_kb_cities_geom         ON kb_cities USING GIST (geom);
 
 -- ------------------------------------------------------------
 -- kb_pois : Points of Interest
@@ -89,7 +85,6 @@ CREATE TABLE kb_pois (
     description     TEXT,
     latitude        DECIMAL(9,6),
     longitude       DECIMAL(9,6),
-    geom            GEOMETRY(Point, 4326),
     address         VARCHAR(512),
     opening_hours   JSONB,
     price_info      JSONB,
@@ -113,7 +108,6 @@ CREATE INDEX idx_kb_pois_source         ON kb_pois(source, source_id);
 CREATE INDEX idx_kb_pois_content_hash   ON kb_pois(content_hash);
 CREATE INDEX idx_kb_pois_metadata_gin   ON kb_pois USING GIN (metadata);
 CREATE INDEX idx_kb_pois_opening_gin    ON kb_pois USING GIN (opening_hours);
-CREATE INDEX idx_kb_pois_geom           ON kb_pois USING GIST (geom);
 
 -- ------------------------------------------------------------
 -- kb_travel_guides : Multi-language travel guide content
@@ -157,7 +151,6 @@ CREATE TABLE kb_restaurants (
     address         VARCHAR(512),
     latitude        DECIMAL(9,6),
     longitude       DECIMAL(9,6),
-    geom            GEOMETRY(Point, 4326),
     opening_hours   JSONB,
     contact_info    JSONB,
     rating          DECIMAL(3,2),
@@ -179,7 +172,6 @@ CREATE INDEX idx_kb_restaurants_source        ON kb_restaurants(source, source_i
 CREATE INDEX idx_kb_restaurants_content_hash  ON kb_restaurants(content_hash);
 CREATE INDEX idx_kb_restaurants_metadata_gin  ON kb_restaurants USING GIN (metadata);
 CREATE INDEX idx_kb_restaurants_opening_gin   ON kb_restaurants USING GIN (opening_hours);
-CREATE INDEX idx_kb_restaurants_geom          ON kb_restaurants USING GIST (geom);
 
 -- ------------------------------------------------------------
 -- kb_hotels : Hotel reference data
@@ -194,7 +186,6 @@ CREATE TABLE kb_hotels (
     address         VARCHAR(512),
     latitude        DECIMAL(9,6),
     longitude       DECIMAL(9,6),
-    geom            GEOMETRY(Point, 4326),
     amenities       JSONB,
     room_info       JSONB,
     contact_info    JSONB,
@@ -219,7 +210,6 @@ CREATE INDEX idx_kb_hotels_source         ON kb_hotels(source, source_id);
 CREATE INDEX idx_kb_hotels_content_hash   ON kb_hotels(content_hash);
 CREATE INDEX idx_kb_hotels_metadata_gin  ON kb_hotels USING GIN (metadata);
 CREATE INDEX idx_kb_hotels_amenities_gin ON kb_hotels USING GIN (amenities);
-CREATE INDEX idx_kb_hotels_geom           ON kb_hotels USING GIST (geom);
 
 -- ------------------------------------------------------------
 -- kb_routes : Travel routes between cities

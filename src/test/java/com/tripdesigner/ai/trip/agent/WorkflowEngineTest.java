@@ -50,6 +50,7 @@ class WorkflowEngineTest {
     @Mock private WorkflowSessionRepository sessionRepo;
     @Mock private WorkflowStepRepository stepRepo;
     @Mock private WorkflowSessionSetupService setupService;
+    @Mock private com.tripdesigner.ai.trip.LanguageDetector languageDetector;
 
     private ObjectMapper objectMapper;
 
@@ -155,6 +156,7 @@ class WorkflowEngineTest {
                 stepRepo,
                 objectMapper,
                 props,
+                languageDetector,
                 setupService
         );
     }

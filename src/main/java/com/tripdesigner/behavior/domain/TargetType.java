@@ -6,5 +6,6 @@ public enum TargetType {
     DESTINATION,
     POST,
     SEARCH,
-    PAGE
+    PAGE,
+    MULTIMODAL
 }

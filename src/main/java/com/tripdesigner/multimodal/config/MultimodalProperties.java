@@ -22,6 +22,8 @@ public class MultimodalProperties {
     private long maxFileSize = 10L * 1024 * 1024;
     /** 是否启用 AI 视觉识别（关闭时返回 fallback 结果） */
     private boolean recognitionEnabled = true;
+    /** 多模态模型名称 */
+    private String model = "bakllava";
 
     public Path resolveStoragePath(String filename) {
         return Path.of(storageDir).resolve(filename);

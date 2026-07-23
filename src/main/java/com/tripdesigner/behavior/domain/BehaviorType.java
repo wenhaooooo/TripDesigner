@@ -9,5 +9,6 @@ public enum BehaviorType {
     SEARCH,
     BOOK,
     CANCEL,
-    FAVORITE
+    FAVORITE,
+    UPLOAD
 }

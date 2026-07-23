@@ -79,8 +79,6 @@ public class KnowledgeConfig {
 
         return builder
                 .requestFactory(() -> factory)
-                .setConnectTimeout(Duration.ofSeconds(10))
-                .setReadTimeout(Duration.ofSeconds(30))
                 .build();
     }
 }

@@ -27,16 +27,33 @@ function scrollToBottom() {
 }
 
 onMounted(async () => {
-  await fetchMessages()
-  scrollToBottom()
   try {
     const res = await conversationApi.list()
     conversations.value = res.data
   } catch {
   }
+
+  if (isNaN(conversationId.value) || conversationId.value === 0) {
+    if (conversations.value.length > 0) {
+      selectConversation(conversations.value[0].id)
+    } else {
+      await createNewConversation()
+    }
+    return
+  }
+
+  const exists = conversations.value.some(c => c.id === conversationId.value)
+  if (!exists) {
+    await createNewConversation()
+    return
+  }
+
+  await fetchMessages()
+  scrollToBottom()
 })
 
 watch(() => props.id, async () => {
+  if (isNaN(conversationId.value) || conversationId.value === 0) return
   await fetchMessages()
   scrollToBottom()
 })
@@ -45,6 +62,20 @@ async function fetchMessages() {
   try {
     const res = await conversationApi.listMessages(conversationId.value)
     messages.value = res.data
+  } catch {
+    messages.value = []
+  }
+}
+
+async function createNewConversation() {
+  try {
+    const res = await conversationApi.create({ title: '新对话' })
+    const newId = res.data.id
+    selectedConvId.value = newId
+    import('vue-router').then(({ useRouter }) => {
+      const router = useRouter()
+      router.push(`/chat/${newId}`)
+    })
   } catch {
   }
 }

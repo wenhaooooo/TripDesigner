@@ -62,7 +62,7 @@ class TripIntegrationTest extends IntegrationTest {
 
             // 3. Get trip detail
             TripDetailVo detail = tripService.get(created.getId());
-            assertEquals("Tokyo Trip", detail.getTrip().getTitle());
+            assertEquals("Tokyo Trip", detail.getTitle());
             assertTrue(detail.getDays().isEmpty());
 
             // 4. Create trip day

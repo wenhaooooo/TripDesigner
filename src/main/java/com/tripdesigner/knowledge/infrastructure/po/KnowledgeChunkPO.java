@@ -59,4 +59,7 @@ public class KnowledgeChunkPO {
 
     @Version
     private Integer version;
+
+    @TableField(exist = false)
+    private Double distance;
 }

@@ -2,6 +2,8 @@ package com.tripdesigner.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -13,6 +15,7 @@ import java.util.concurrent.Executor;
  * 工作流是 IO 密集型任务（LLM 调用），线程数可大于 CPU 核数。
  */
 @Configuration
+@EnableAsync
 public class AsyncConfig {
 
     /**
@@ -21,7 +24,9 @@ public class AsyncConfig {
      * - 最大线程数：32（突发流量上限）
      * - 队列容量：64（超过后拒绝新请求，快速失败）
      * - 线程名前缀：workflow-（便于日志排查）
+     * - @Primary：作为 @Async 的默认执行器，解决多个 TaskExecutor 的歧义问题
      */
+    @Primary
     @Bean("workflowExecutor")
     public Executor workflowExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

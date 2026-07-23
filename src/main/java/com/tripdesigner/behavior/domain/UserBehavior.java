@@ -48,6 +48,7 @@ public class UserBehavior {
             case BOOK -> 10;
             case CANCEL -> -3;
             case SKIP -> -1;
+            case UPLOAD -> 5;
         };
     }
 }

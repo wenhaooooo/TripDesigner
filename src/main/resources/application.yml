@@ -84,7 +84,7 @@ jwt:
 
 app:
   auth:
-    permit-paths: /auth/**,/ai/smoke,/ai/tool-smoke,/actuator/health,/actuator/info,/v3/api-docs/**,/swagger-ui/**,/swagger-ui.html,/ws/**,/error,/xiaohongshu/**,/rag/**,/shared/**
+    permit-paths: /auth/**,/ai/smoke,/ai/tool-smoke,/actuator/health,/actuator/info,/v3/api-docs/**,/swagger-ui/**,/swagger-ui.html,/ws/**,/error,/xiaohongshu/**,/rag/**,/shared/**,/knowledge/**
 
 springdoc:
   api-docs:

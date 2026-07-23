@@ -41,7 +41,7 @@ class ConversationTest {
 
     @Test
     void conversationMessage_create_sets_version_zero() {
-        ConversationMessage m = ConversationMessage.of(1L, ConversationRole.USER, "Hello", null);
+        ConversationMessage m = ConversationMessage.of(1L, 1L, ConversationRole.USER, "Hello", null);
         assertNull(m.getId());
         assertEquals(ConversationRole.USER, m.getRole());
         assertEquals("Hello", m.getContent());
