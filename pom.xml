@@ -71,6 +71,13 @@
             <version>8.0</version>
         </dependency>
 
+        <!-- Apache POI：Excel 文件生成，用于行程导出 -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
         <!-- Spring AMQP：RabbitMQ 集成，用于 LLM 推理任务异步化 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
