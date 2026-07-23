@@ -35,4 +35,10 @@ export const tripApi = {
   createDestination: (data: Partial<DestinationVO>) => request.post<DestinationVO>('/destinations', data),
   updateDestination: (id: number, data: Partial<DestinationVO>) => request.put<DestinationVO>(`/destinations/${id}`, data),
   deleteDestination: (id: number) => request.delete(`/destinations/${id}`),
+
+  // Export
+  exportExcel: (id: number) => request.get(`/trips/${id}/export/excel`, { responseType: 'blob' }),
+  exportCsv: (id: number) => request.get(`/trips/${id}/export/csv`, { responseType: 'blob' }),
+  exportIcs: (id: number) => request.get(`/trips/${id}/export/ics`, { responseType: 'blob' }),
+  exportJson: (id: number) => request.get(`/trips/${id}/export/json`, { responseType: 'blob' }),
 }

@@ -6,7 +6,7 @@ import { weatherApi } from '@/api/weather'
 import { shareApi } from '@/api/share'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { CreateTripDayRequest, CreateTripActivityRequest, WeatherInfo, TripShareVO, CreateShareRequest } from '@/types/api'
-import { Plus, Delete, Edit, ArrowLeft, MagicStick, Check, Close, ArrowDown, ArrowRight, Share, Sunny, MapLocation, Calendar, Wallet } from '@element-plus/icons-vue'
+import { Plus, Delete, Edit, ArrowLeft, MagicStick, Check, Close, ArrowDown, ArrowRight, Share, Sunny, MapLocation, Calendar, Wallet, Download } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 interface RouteProps {
@@ -63,6 +63,9 @@ const shareList = ref<TripShareVO[]>([])
 const shareLoading = ref(false)
 const newShare = ref<CreateShareRequest>({ shareType: 'VIEW', maxViews: 100, expireDays: 30 })
 
+const showExportDialog = ref(false)
+const exportLoading = ref(false)
+
 async function loadWeather() {
   if (!trip.currentTrip?.destinationName || !trip.currentTrip?.startDate || !trip.currentTrip?.endDate) return
   weatherLoading.value = true
@@ -115,6 +118,39 @@ function copyShareLink(token: string) {
   const url = `${window.location.origin}/shared/${token}`
   navigator.clipboard.writeText(url)
   ElMessage.success('链接已复制到剪贴板')
+}
+
+async function downloadFile(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+async function exportTrip(format: 'excel' | 'csv' | 'ics' | 'json') {
+  exportLoading.value = true
+  const formatMap = {
+    excel: { ext: '.xlsx', api: tripApi.exportExcel, label: 'Excel' },
+    csv: { ext: '.csv', api: tripApi.exportCsv, label: 'CSV' },
+    ics: { ext: '.ics', api: tripApi.exportIcs, label: 'ICS' },
+    json: { ext: '.json', api: tripApi.exportJson, label: 'JSON' },
+  }
+  const info = formatMap[format]
+  try {
+    const res = await info.api(tripId.value)
+    const filename = `trip-${tripId.value}${info.ext}`
+    downloadFile(res.data, filename)
+    ElMessage.success(`${info.label} 导出成功`)
+    showExportDialog.value = false
+  } catch {
+    ElMessage.error(`${info.label} 导出失败`)
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 function toggleDay(dayId: number) {
@@ -290,6 +326,7 @@ watch(() => tripId.value, async (newId) => {
       </div>
       <div class="header-actions">
         <el-button :icon="Share" class="action-btn" @click="openShareDialog">分享</el-button>
+        <el-button :icon="Download" class="action-btn" @click="showExportDialog = true">导出</el-button>
         <el-button :icon="MagicStick" class="action-btn primary" @click="generating = true">AI 优化</el-button>
         <el-button v-if="!editMode" :icon="Edit" class="action-btn" @click="editMode = true">编辑</el-button>
         <el-button v-else :icon="Check" class="action-btn primary" @click="editMode = false">保存</el-button>
@@ -473,6 +510,42 @@ watch(() => tripId.value, async (newId) => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <el-dialog v-model="showExportDialog" title="导出行程" width="450px" class="dark-dialog">
+      <div v-loading="exportLoading" class="export-container">
+        <p class="export-hint">选择导出格式：</p>
+        <div class="export-options">
+          <el-button class="export-btn" @click="exportTrip('excel')">
+            <div class="export-icon">📊</div>
+            <div class="export-info">
+              <div class="export-name">Excel</div>
+              <div class="export-desc">包含行程概览和每日行程两个工作表</div>
+            </div>
+          </el-button>
+          <el-button class="export-btn" @click="exportTrip('csv')">
+            <div class="export-icon">📝</div>
+            <div class="export-info">
+              <div class="export-name">CSV</div>
+              <div class="export-desc">纯文本表格格式，适合数据分析</div>
+            </div>
+          </el-button>
+          <el-button class="export-btn" @click="exportTrip('ics')">
+            <div class="export-icon">📅</div>
+            <div class="export-info">
+              <div class="export-name">ICS</div>
+              <div class="export-desc">日历格式，可导入系统日历</div>
+            </div>
+          </el-button>
+          <el-button class="export-btn" @click="exportTrip('json')">
+            <div class="export-icon">📦</div>
+            <div class="export-info">
+              <div class="export-name">JSON</div>
+              <div class="export-desc">完整数据结构，便于程序集成</div>
+            </div>
+          </el-button>
         </div>
       </div>
     </el-dialog>
@@ -919,6 +992,64 @@ watch(() => tripId.value, async (newId) => {
 
 :deep(.dark-dialog .el-form-item__label) {
   color: var(--text-secondary);
+}
+
+.export-container {
+  padding: 8px 0;
+}
+
+.export-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 16px 0;
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.export-btn:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary-color);
+}
+
+.export-icon {
+  font-size: 24px;
+}
+
+.export-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.export-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.export-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 @media (max-width: 768px) {
