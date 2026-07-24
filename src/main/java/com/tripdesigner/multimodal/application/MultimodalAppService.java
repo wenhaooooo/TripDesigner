@@ -13,6 +13,8 @@ import com.tripdesigner.multimodal.config.MultimodalProperties;
 import com.tripdesigner.multimodal.domain.MultimodalUpload;
 import com.tripdesigner.multimodal.domain.MultimodalUploadRepository;
 import com.tripdesigner.multimodal.domain.UploadStatus;
+import com.tripdesigner.trip.application.TripAppService;
+import com.tripdesigner.trip.api.vo.TripVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -31,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +60,7 @@ public class MultimodalAppService {
     private final MultimodalProperties properties;
     private final ObjectMapper objectMapper;
     private final ChatClient chatClient;
+    private final TripAppService tripAppService;
 
     /** 上传图片并启动 AI 识别流程 */
     public MultimodalUploadVo uploadAndRecognize(Long userId, MultipartFile file) {
@@ -112,10 +116,25 @@ public class MultimodalAppService {
         String suggestedTitle = (String) result.getOrDefault("suggestedTripTitle", "AI 推荐行程 - " + destination);
         Integer days = parseInteger(result.get("suggestedDays"), 3);
 
-        // 保存 generatedTripId（避免实际调用 LLM 生成行程的复杂性，
-        // 这里仅记录识别到的目标信息，前端可基于此跳转到 AI 生成页填写表单）
+        // 根据识别结果创建行程
+        LocalDate startDate = LocalDate.now().plusDays(7);
+        LocalDate endDate = startDate.plusDays(days - 1);
+        String title = suggestedTitle;
+        String description = (String) result.getOrDefault("description", "");
+        Integer budget = days * 1000;
+
+        TripVo trip = tripAppService.createForUser(
+                userId, title, description, destination, startDate, endDate, budget);
+
+        Long generatedTripId = trip.getId();
+
+        // 为每一天创建空 Day
+        for (int d = 1; d <= days; d++) {
+            tripAppService.findOrCreateDayForTrip(generatedTripId, userId, d);
+        }
+
         Map<String, Object> updatedResult = new HashMap<>(result);
-        updatedResult.put("generatedTripId", null);
+        updatedResult.put("generatedTripId", generatedTripId);
         updatedResult.put("suggestedPrompt", buildPrompt(destination, days, result));
 
         MultimodalUpload updated = upload.withRecognition(updatedResult);
